@@ -1,0 +1,33 @@
+{
+  "type": "lambda",
+  "language": "python",
+  "name": "qa_judge_fetch_qa_session",
+  "title": "Fetch Q&A session question and answer",
+  "description": "Given a Q&A agent key and a session key, returns ONLY the user's question (first user message) and the agent's final answer (last agent reply) of that session. Search results, tool calls and everything else in the session are filtered out. Returns success=false with an error when the session cannot be read.",
+  "code": "import json\nimport re\n\n\ndef _enc(s):\n    out = []\n    for ch in str(s):\n        if re.match(r\"[A-Za-z0-9_.~-]\", ch):\n            out.append(ch)\n        else:\n            out.append(\"\".join(\"%{:02X}\".format(b) for b in ch.encode(\"utf-8\")))\n    return \"\".join(out)\n\n\ndef process(agent_key: str, session_key: str, api_base_url: str = \"https://api.vectara.dev/v2\") -> dict:\n    agent_key = str(agent_key).strip()\n    session_key = str(session_key).strip()\n    if not re.match(r\"^[A-Za-z0-9_.-]+$\", agent_key) or not re.match(r\"^[A-Za-z0-9_-]+$\", session_key):\n        return {\"success\": False, \"error\": \"agent_key or session_key contains unexpected characters\"}\n    base = str(api_base_url).rstrip(\"/\")\n    events = []\n    page_key = \"\"\n    for _ in range(30):\n        url = base + \"/agents/\" + agent_key + \"/sessions/\" + session_key + \"/events?limit=100\"\n        if page_key:\n            url += \"&page_key=\" + _enc(page_key)\n        try:\n            resp = tool.web_get(url=url)\n        except Exception as e:\n            return {\"success\": False, \"error\": \"request failed: \" + str(e)[:300]}\n        if not isinstance(resp, dict):\n            return {\"success\": False, \"error\": \"unexpected response from web_get\"}\n        status = resp.get(\"status_code\")\n        body = resp.get(\"content\", \"\")\n        if status != 200:\n            return {\"success\": False, \"error\": \"sessions API returned HTTP \" + str(status) + \": \" + str(body)[:300]}\n        if resp.get(\"truncated\"):\n            return {\"success\": False, \"error\": \"the events response was truncated, so the answer cannot be extracted reliably\"}\n        try:\n            data = json.loads(body)\n        except Exception as e:\n            return {\"success\": False, \"error\": \"could not parse the events response: \" + str(e)[:200]}\n        events.extend(data.get(\"events\", []))\n        page_key = (data.get(\"metadata\") or {}).get(\"page_key\") or \"\"\n        if not page_key:\n            break\n    events.sort(key=lambda e: e.get(\"created_at\", \"\"))\n    question = \"\"\n    for e in events:\n        if e.get(\"type\") == \"input_message\":\n            msgs = e.get(\"messages\") or []\n            question = \" \".join(str(m.get(\"content\", \"\")) for m in msgs if isinstance(m, dict) and m.get(\"type\") == \"text\").strip()\n            if question:\n                break\n    answer = \"\"\n    for e in events:\n        t = e.get(\"type\")\n        if t == \"agent_output\" and str(e.get(\"content\") or \"\").strip():\n            answer = str(e.get(\"content\")).strip()\n        elif t == \"structured_output\":\n            answer = json.dumps(e.get(\"content\"), ensure_ascii=False)\n    user_messages = sum(1 for e in events if e.get(\"type\") == \"input_message\")\n    if not question:\n        return {\"success\": False, \"error\": \"no user question found in that session\", \"events_seen\": len(events)}\n    return {\"success\": True, \"agent_key\": agent_key, \"session_key\": session_key, \"question\": question,\n            \"answer\": answer, \"answer_found\": bool(answer), \"user_messages_in_session\": user_messages}\n",
+  "execution_configuration": {
+    "max_execution_time_seconds": 120,
+    "max_memory_mb": 512
+  },
+  "tool_configurations": {
+    "web_get": {
+      "type": "dynamic_vectara",
+      "tool_id": "tol_vectara_web_get",
+      "argument_override": {
+        "method": "GET",
+        "auth": {
+          "type": "header",
+          "header": "x-api-key",
+          "value": {
+            "$ref": "agent.secrets.vectara_api_key"
+          }
+        },
+        "ssl_verify": true,
+        "head_lines": 5000,
+        "tail_lines": 0,
+        "max_content_bytes": 10485760,
+        "timeout_seconds": 60
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+# credentials: never commit them
+.env
+.env.*
+.envrc
+*.key
+*.pem
+
+# local inputs and run outputs: session ids, questions, answers, scores, ground-truth documents
+*.csv
+!examples/*.example.csv
+*.pdf
+*.tmp
+retrieval_*.json
+
+# tooling
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.idea/
+.vscode/
+.claude/

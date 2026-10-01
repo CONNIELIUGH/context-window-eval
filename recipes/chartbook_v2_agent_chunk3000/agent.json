@@ -1,0 +1,105 @@
+{
+  "key": "chartbook_v2_agent_chunk3000",
+  "name": "Chartbook v2 Q&A (chunk_size=3000)",
+  "description": "Chartbook Q&A over chartbook_v2_chunk3000: body text in fixed ~3000-character chunks (part_kind=prose), figures embedded as the actual image with a short caption (part_kind=image), and tables as structured table parts (part_kind=table), all on the boomerang-v2 encoder. A text query can match a figure by its visual content; the agent fetches and reads a relevant figure before answering and cites page numbers.",
+  "tool_configurations": {
+    "book_search": {
+      "enabled": true,
+      "metadata": {},
+      "enrichment_only": false,
+      "type": "corpora_search",
+      "argument_override": {},
+      "query_configuration": {
+        "search": {
+          "corpora": [
+            {
+              "corpus_key": "chartbook_v2_chunk3000",
+              "lexical_interpolation": 0.0,
+              "semantics": "default"
+            }
+          ],
+          "offset": 0,
+          "limit": 10,
+          "reranker": {
+            "type": "none"
+          }
+        },
+        "generation": {
+          "enabled": false,
+          "max_used_search_results": 5,
+          "response_language": "auto",
+          "enable_factual_consistency_score": true
+        },
+        "save_history": false
+      }
+    },
+    "get_figure_image": {
+      "enabled": true,
+      "metadata": {},
+      "enrichment_only": false,
+      "type": "dynamic_vectara",
+      "tool_id": "tol_vectara_get_document_image",
+      "argument_override": {}
+    },
+    "image_read": {
+      "enabled": true,
+      "metadata": {},
+      "enrichment_only": false,
+      "type": "image_read",
+      "argument_override": {
+        "detail": "auto"
+      }
+    }
+  },
+  "skills": {},
+  "model": {
+    "name": "onprem-gemma4",
+    "parameters": {},
+    "retry_configuration": {
+      "enabled": true,
+      "max_retries": 3,
+      "initial_backoff_ms": 1000,
+      "max_backoff_ms": 30000,
+      "backoff_factor": 2.0
+    }
+  },
+  "first_step": {
+    "name": "main",
+    "type": "conversational",
+    "instructions": [
+      {
+        "name": "main",
+        "description": "Inline instruction for agent chartbook_v2_agent",
+        "template_type": "velocity",
+        "template": "You answer questions about semiconductor-related technical documents (device physics, datasheets and application circuits, memory characterization and reliability, and failure analysis) from an indexed corpus. Always call book_search first; never answer from general knowledge.\n\nThis corpus mixes body text (part_kind=prose, fixed ~3000-character chunks), figures embedded as the ACTUAL IMAGE (part_kind=image), and tables (part_kind=table), so a text query can match a chart by its visual content; figure parts carry a short caption in addition to the embedded image. A figure result carries an image object with an id and a document_id. A table result carries a table object with the complete headers and rows — answer table questions from those rows, not only from the preview text.\n\nWhen a chart or figure is relevant to the question, do not answer from its text alone — actually look at it:\n1. Call get_figure_image with corpus_key=\"chartbook_v2_chunk3000\", document_id=<result document_id>, image_id=<result image.id>.\n2. Call image_read with that artifact_id.\n3. Answer from what you actually see: exact values, series, trends.\n\nCite the page number from part metadata for every claim, e.g. (p. 25). Say explicitly when you visually inspected a figure. If search returns nothing relevant, say you could not find it in the chartbook.",
+        "metadata": {},
+        "enabled": true,
+        "type": "inline"
+      }
+    ],
+    "output_parser": {
+      "type": "default"
+    },
+    "reminders": [],
+    "tool_calls": []
+  },
+  "metadata": {},
+  "hooks": [],
+  "compaction": {
+    "enabled": true,
+    "threshold_percent": 80,
+    "keep_recent_inputs": 1,
+    "tool_event_policy": "include_outputs"
+  },
+  "fact_extraction": {
+    "enabled": false
+  },
+  "tool_output_offloading": {
+    "enabled": true,
+    "mode": "truncate",
+    "context_percentage": 0.25,
+    "max_threshold_bytes": 1048576,
+    "min_threshold_bytes": 4096,
+    "headroom_percentage": 0.7
+  }
+}

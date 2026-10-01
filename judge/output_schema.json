@@ -1,0 +1,79 @@
+{
+  "description": "Verdict of the Q&A answer judge.",
+  "name": "qa_answer_verdict",
+  "strict": true,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "description": "scored in the normal case; see STATUS.",
+        "type": "string",
+        "enum": [
+          "scored",
+          "judge_error",
+          "ground_truth_lacks_answer"
+        ]
+      },
+      "key_points": {
+        "description": "Facts a correct answer must contain, each starting with MAIN or SECONDARY and ending with its source in brackets.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "supported": {
+        "description": "Answer claims confirmed by the ground truth, each with its source.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "unsupported_or_wrong": {
+        "description": "Each item starts with CONTRADICTED: or NOT FOUND:, then MATERIAL or MINOR, then the claim and why.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "missing": {
+        "description": "Key points absent from the answer.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "figures_viewed": {
+        "description": "Artifact IDs of figures opened with image_read.",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "reason": {
+        "description": "Two to four sentences explaining the score.",
+        "type": "string"
+      },
+      "score": {
+        "description": "Single overall score, decided last from the lists.",
+        "type": "integer",
+        "enum": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    "required": [
+      "status",
+      "key_points",
+      "supported",
+      "unsupported_or_wrong",
+      "missing",
+      "figures_viewed",
+      "reason",
+      "score"
+    ],
+    "additionalProperties": false
+  }
+}

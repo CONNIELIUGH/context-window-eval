@@ -1,0 +1,3 @@
+id,qa_agent,qa_session,ground_truth_files
+q1,chartbook_v2_agent_chunk3000,ase_1a2b_3c4d,example_paper.pdf
+q2,chartbook_v2_agent_chunk3000,ase_5e6f_7a8b,example_paper.pdf;example_handbook.pdf
