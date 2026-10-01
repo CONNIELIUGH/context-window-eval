@@ -7,7 +7,7 @@ This repository holds two kinds of things:
 
 The judge is not a product feature and does not answer questions. Its only purpose is to provide metrics that tell us how well a given way of composing the context window works. `chartbook_v2_agent_chunk3000` is one recipe, the first one here. More recipes will be added next to it, and every one of them is measured with the same judge.
 
-This is an internal working repository. It targets a Vectara staging account and names resources that exist there.
+The agent definitions here were built on a Vectara account and name resources that exist there (a corpus, models, tool ids). To run them on your own account, change those references; each README lists what its agent depends on.
 
 ## What the judge measures
 
